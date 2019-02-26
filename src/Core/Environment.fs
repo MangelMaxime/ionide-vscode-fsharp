@@ -14,6 +14,9 @@ module Environment =
 
     let isWin = Globals.``process``.platform = Base.NodeJS.Platform.Win32
 
+    [<Emit("undefined === $0")>]
+    let isUndefined (value : 'a) = jsNative
+
     let private (</>) a b =
         if isWin then a + @"\" + b
         else a + "/" + b
@@ -31,7 +34,7 @@ module Environment =
         | "AMD64", "AMD64" | null, "AMD64" | "x86", "AMD64" -> Globals.``process``.env?``ProgramFiles(x86)`` |> unbox<string>
         | _ -> Globals.``process``.env?``ProgramFiles`` |> unbox<string>
         |> fun detected ->
-            if detected = null then @"C:\Program Files (x86)\"
+            if detected = null || isUndefined detected then @"C:\Program Files (x86)\"
             else detected
 
     // Always returns host program files folder

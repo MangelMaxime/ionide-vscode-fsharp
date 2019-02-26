@@ -44,7 +44,7 @@ module LineLensConfig =
     let getConfig () =
         let cfg = workspace.getConfiguration()
         let fsharpCodeLensConfig = cfg.get("[fsharp]", JsObject.empty).tryGet<bool>("editor.codeLens")
-        
+
         { enabled = cfg.get("FSharp.lineLens.enabled", "replacecodelens") |> parseEnabledMode
           prefix = cfg.get("FSharp.lineLens.prefix", defaultConfig.prefix) }
 

@@ -103,7 +103,7 @@ let activate (context : ExtensionContext) : Api =
         Debugger.activate context
         Diagnostics.activate context
     )
-    |> Promise.catch (fun error -> promise { () }) // prevent unhandled rejected promises
+    |> Promise.suppress // prevent unhandled rejected promises
     |> ignore
 
     Forge.activate context

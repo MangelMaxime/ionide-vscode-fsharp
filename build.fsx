@@ -83,18 +83,12 @@ Target "YarnInstall" <| fun () ->
 Target "DotNetRestore" <| fun () ->
     DotNetCli.Restore (fun p -> { p with WorkingDir = "src" } )
 
-let runFable additionalArgs noTimeout =
-    let cmd = "fable webpack -- --config webpack.config.js " + additionalArgs
-    let timeout = if noTimeout then TimeSpan.MaxValue else TimeSpan.FromMinutes 30.
-    DotNetCli.RunCommand (fun p -> { p with WorkingDir = "src"; TimeOut = timeout } ) cmd
-
 Target "RunScript" (fun _ ->
-    // Ideally we would want a production (minized) build but UglifyJS fail on PerMessageDeflate.js as it contains non-ES6 javascript.
-    runFable "" false
+    run "npx" "webpack --mode production" ""
 )
 
 Target "Watch" (fun _ ->
-    runFable "--watch" true
+    run "npx" "webpack --watch" ""
 )
 
 Target "CopyFSAC" (fun _ ->

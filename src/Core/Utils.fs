@@ -304,18 +304,20 @@ module Markdown =
 
 module Promise =
 
-    open Fable.Import.JS
+    open Fable.Import
     open Ionide.VSCode.Helpers
 
-    let suppress (pr : Promise<'T>) =
-        pr |> Ionide.VSCode.Helpers.Promise.catch (fun _ -> promise { () })
+    let suppress (pr : JS.Promise<'T>) =
+        pr
+        |> Promise.catchEnd ignore
+
 
     let executeForAll f items =
         match items with
-        | [] -> Ionide.VSCode.Helpers.Promise.lift (null |> unbox)
+        | [] -> Promise.empty
         | [x] -> f x
         | x::tail ->
-            tail |> List.fold (fun acc next -> acc |> Ionide.VSCode.Helpers.Promise.bind (fun _ -> f next)) (f x)
+            tail |> List.fold (fun acc next -> acc |> Promise.bind (fun _ -> f next)) (f x)
 
 module Event =
 

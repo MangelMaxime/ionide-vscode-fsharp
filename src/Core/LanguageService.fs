@@ -8,6 +8,7 @@ open Fable.Import.vscode
 open Fable.Import.Node
 open Ionide.VSCode.Helpers
 open Fable.Import.ws
+open Thoth.Json
 
 open DTO
 open Fable.Import.Axios
@@ -195,7 +196,6 @@ module LanguageService =
         |> Promise.onFail (fun r ->
             // The outgoing request was not made
             logIncomingResponseError requestId fsacAction started r
-            null |> unbox
         )
         |> Promise.map(fun r ->
             // the outgoing request was made
@@ -494,7 +494,6 @@ module LanguageService =
                 return fsacPaths.MSBuild
         }
 
-    [<PassGenerics>]
     let private registerNotifyAll (cb : 'a -> unit) (ws : WebSocket) =
         ws.on_message((fun (res : string) ->
             log.Debug(sprintf "WebSocket message: '%s'" res)
@@ -503,7 +502,6 @@ module LanguageService =
             ) |> unbox) |> ignore
         ()
 
-    [<PassGenerics>]
     let registerNotify (cb : ParseResult -> unit) =
         let onParseResult n =
             if unbox n?Kind = "errors" then
@@ -511,7 +509,6 @@ module LanguageService =
         socketNotify
         |> Option.iter (registerNotifyAll onParseResult)
 
-    [<PassGenerics>]
     let registerNotifyAnalyzer (cb : AnalyzerResult -> unit) =
         let onParseResult n =
             if unbox n?Kind = "analyzer" then
@@ -519,7 +516,6 @@ module LanguageService =
         socketNotifyAnalyzer
         |> Option.iter (registerNotifyAll onParseResult)
 
-    [<PassGenerics>]
     let registerNotifyWorkspace (cb : _ -> unit) =
         let onMessage res =
             match res?Kind |> unbox with
@@ -583,13 +579,13 @@ module LanguageService =
                 let error = unbox<JS.Error> e
                 fsacStdoutWriter (error.message)
                 if not isResolvedAsStarted then
-                    reject (error.message)
+                    reject (error :?> System.Exception)
             )
             |> Process.onErrorOutput (fun n ->
                 let buffer = unbox<Buffer.Buffer> n
                 fsacStdoutWriter (buffer.toString())
                 if not isResolvedAsStarted then
-                    reject (buffer.toString())
+                    reject (JS.Error.Create(buffer.toString()) :?> System.Exception)
             )
             |> ignore
         )
@@ -744,7 +740,6 @@ module LanguageService =
             socketNotify <- startSocket "notify"
             socketNotifyWorkspace <- startSocket "notifyWorkspace"
             socketNotifyAnalyzer <- startSocket "notifyAnalyzer"
-            ()
         )
         |> Promise.bind (fun _ -> ensurePrereqsForRuntime targetRuntime)
 

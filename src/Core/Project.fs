@@ -238,7 +238,7 @@ module Project =
                 Some (path, (ProjectLoadingState.Failed (path, msg)))
         if path.EndsWith ".fsproj" then
             LanguageService.project path
-            |> Promise.either (loaded >> Promise.lift) (failed >> Promise.lift)
+            |> Promise.either (loaded >> Promise.lift >> U2.Case2) (failed >> Promise.lift >> U2.Case2)
             |> Promise.map (fun proj ->
                 match proj with
                 | Some (path, state) ->

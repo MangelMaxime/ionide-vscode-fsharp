@@ -43,11 +43,11 @@ module Diagnostics =
             )
             |> Process.onError (fun e ->
                 let error = unbox<JS.Error> e
-                reject (error.message)
+                reject (error :?> System.Exception)
             )
             |> Process.onErrorOutput (fun e ->
                 let error = unbox<JS.Error> e
-                reject (error.message)
+                reject (error :?> System.Exception)
             )
             |> ignore
         )
@@ -156,8 +156,8 @@ Error: %s
     let getMonoVersion () =
         promise {
             let! mono = Environment.mono
-            match mono with 
-            | Some mono -> 
+            match mono with
+            | Some mono ->
                 let! version = execCommand mono [ "--version" ]
                 return version.Trim()
             | None -> return "No mono installation found"
@@ -167,7 +167,7 @@ Error: %s
         let netcoreInfos = promise {
             let! dotnet = Environment.dotnet
             match dotnet with
-            | Some dotnet -> 
+            | Some dotnet ->
                 let! version = execCommand dotnet [ "--version" ]
                 return Templates.netcoreRuntime version
             | None -> return "No dotnet installation found"
@@ -181,6 +181,7 @@ Error: %s
                 let! msbuildVersion = getMSBuildVersion ()
                 return Templates.msbuildInfo msbuildVersion
         }
+
         Promise.all [netcoreInfos; monoInfos]
         |> Promise.map (String.concat "\n")
 
