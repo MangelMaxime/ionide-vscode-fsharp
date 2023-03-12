@@ -314,6 +314,26 @@ module SolutionExplorer =
     let private getRoot () =
         defaultArg (getSolution ()) (Workspace [])
 
+    module private ShowInActivity =
+
+        let private setInFsharpActivity =
+            Context.cachedSetter<bool> "fsharp.showProjectExplorerInFsharpActivity"
+
+        let private setInExplorerActivity =
+            Context.cachedSetter<bool> "fsharp.showProjectExplorerInExplorerActivity"
+
+        let initializeAndGetId () : string =
+            let showIn = "FSharp.showProjectExplorerIn" |> Configuration.get "fsharp"
+
+            let inFsharpActivity = (showIn = "fsharp")
+            setInFsharpActivity inFsharpActivity
+            setInExplorerActivity (not inFsharpActivity)
+
+            if inFsharpActivity then
+                "ionide.projectExplorerInActivity"
+            else
+                "ionide.projectExplorer"
+
     let private createProvider
         (event: Event<U3<Model, ResizeArray<Model>, unit> option> option)
         (rootChanged: EventEmitter<Model>)
@@ -470,27 +490,30 @@ module SolutionExplorer =
                     element: Model,
                     token: CancellationToken
                 ) : ProviderResult<TreeItem> =
-                Some(U2.Case1 item) }
+                Some(U2.Case1 item)
 
-    module private ShowInActivity =
+        interface TreeDragAndDropController<Model> with
 
-        let private setInFsharpActivity =
-            Context.cachedSetter<bool> "fsharp.showProjectExplorerInFsharpActivity"
+            member this.dragMimeTypes = ResizeArray [ "application/maxime_drag"; "text/uri-list" ]
+            member this.dropMimeTypes = ResizeArray [ "application/maxime_drop"; "text/uri-list" ]
 
-        let private setInExplorerActivity =
-            Context.cachedSetter<bool> "fsharp.showProjectExplorerInExplorerActivity"
+            member this.handleDrag (source, treeDataTransfer, _) =
+                let data = vscode.DataTransferItem.Create (Some source)
 
-        let initializeAndGetId () : string =
-            let showIn = "FSharp.showProjectExplorerIn" |> Configuration.get "fsharp"
+                treeDataTransfer.set(this.dropMimeTypes[0], data)
+                |> U2.Case2
 
-            let inFsharpActivity = (showIn = "fsharp")
-            setInFsharpActivity inFsharpActivity
-            setInExplorerActivity (not inFsharpActivity)
+            member this.handleDrop (target, sources, _)=
+                match sources.get(this.dropMimeTypes[0]) with
+                | Some transferItem ->
+                    let values = transferItem.value
+                    JS.console.log values
 
-            if inFsharpActivity then
-                "ionide.projectExplorerInActivity"
-            else
-                "ionide.projectExplorer"
+                    U2.Case2 ()
+
+                | None ->
+                    U2.Case2 ()
+    }
 
     module NodeReveal =
         module private RevealConfiguration =
@@ -930,6 +953,8 @@ module SolutionExplorer =
 
         let treeOptions = createEmpty<TreeViewOptions<Model>>
         treeOptions.treeDataProvider <- provider
+        treeOptions.dragAndDropController <- Some (provider :?> TreeDragAndDropController<Model>)
+
         let treeView = window.createTreeView (treeViewId, treeOptions)
         context.subscriptions.Add(unbox (box treeView))
 
